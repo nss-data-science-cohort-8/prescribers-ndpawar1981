@@ -343,3 +343,269 @@ WHERE
 	and PR.nppes_provider_city = 'NASHVILLE'
 	and d.OPIOID_DRUG_FLAG = 'Y'
 order by 1,2;
+
+
+
+-----------------------------------------------BONUS---------------------------------------------
+
+--1.How many npi numbers appear in the prescriber table but not in the prescription table?
+
+SELECT
+	P1.NPI,
+	P2.NPI
+FROM
+	PRESCRIBER P1
+	LEFT JOIN PRESCRIPTION P2 USING (NPI)
+WHERE
+	P2.NPI IS NULL;
+
+--alternative
+SELECT
+	P1.NPI
+FROM
+	PRESCRIBER P1
+EXCEPT
+SELECT
+	P2.NPI
+FROM
+	PRESCRIPTION P2;
+
+
+--2
+--a. Find the top five drugs (generic_name) prescribed by prescribers with the specialty of Family Practice.
+SELECT
+	D.generic_name AS DRUG,
+	PB.SPECIALTY_DESCRIPTION as specialty,
+	COUNT(*) AS TOTAL_DRUG
+FROM
+	PRESCRIBER PB
+	INNER JOIN PRESCRIPTION PR USING (NPI)
+	INNER JOIN DRUG D ON PR.DRUG_NAME = D.DRUG_NAME
+WHERE
+	PB.SPECIALTY_DESCRIPTION = 'Family Practice'
+GROUP BY
+	D.generic_name,PB.SPECIALTY_DESCRIPTION
+ORDER BY
+	TOTAL_DRUG DESC
+LIMIT
+	5;
+
+--b.Find the top five drugs (generic_name) prescribed by prescribers with the specialty of Cardiology.
+
+SELECT
+	D.generic_name AS DRUG,
+	PB.SPECIALTY_DESCRIPTION as specialty,
+	COUNT(*) AS TOTAL_DRUG
+FROM
+	PRESCRIBER PB
+	INNER JOIN PRESCRIPTION PR USING (NPI)
+	INNER JOIN DRUG D ON PR.DRUG_NAME = D.DRUG_NAME
+WHERE
+	PB.SPECIALTY_DESCRIPTION = 'Cardiology'
+GROUP BY
+	D.generic_name,PB.SPECIALTY_DESCRIPTION
+ORDER BY
+	TOTAL_DRUG DESC
+LIMIT
+	5;
+
+--c.Which drugs are in the top five prescribed by Family Practice prescribers and Cardiologists? 
+--Combine what you did for parts a and b into a single query to answer this question.
+
+SELECT
+	*
+FROM
+	(
+		SELECT
+			D.GENERIC_NAME AS DRUG,
+			PB.SPECIALTY_DESCRIPTION AS SPECIALTY,
+			COUNT(*) AS TOTAL_DRUG
+		FROM
+			PRESCRIBER PB
+			INNER JOIN PRESCRIPTION PR USING (NPI)
+			INNER JOIN DRUG D ON PR.DRUG_NAME = D.DRUG_NAME
+		WHERE
+			PB.SPECIALTY_DESCRIPTION = 'Family Practice'
+		GROUP BY
+			D.GENERIC_NAME,
+			PB.SPECIALTY_DESCRIPTION
+		ORDER BY
+			TOTAL_DRUG DESC
+		LIMIT
+			5
+	)
+UNION ALL
+SELECT
+	*
+FROM
+	(
+		SELECT
+			D.GENERIC_NAME AS DRUG,
+			PB.SPECIALTY_DESCRIPTION AS SPECIALTY,
+			COUNT(*) AS TOTAL_DRUG
+		FROM
+			PRESCRIBER PB
+			INNER JOIN PRESCRIPTION PR USING (NPI)
+			INNER JOIN DRUG D ON PR.DRUG_NAME = D.DRUG_NAME
+		WHERE
+			PB.SPECIALTY_DESCRIPTION = 'Cardiology'
+		GROUP BY
+			D.GENERIC_NAME,
+			PB.SPECIALTY_DESCRIPTION
+		ORDER BY
+			TOTAL_DRUG DESC
+		LIMIT
+			5
+	);
+
+---3Your goal in this question is to generate a list of the top prescribers in each of the major metropolitan areas of Tennessee. 
+--a. First, write a query that finds the top 5 prescribers in Nashville in terms of the total number of claims (total_claim_count) 
+--across all drugs. Report the npi, the total number of claims, and include a column showing the city.
+
+SELECT
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY,
+	SUM(TOTAL_CLAIM_COUNT) AS TOTAL_CLAIMS
+FROM
+	PRESCRIBER PR
+	INNER JOIN PRESCRIPTION P USING (NPI)
+WHERE
+	PR.NPPES_PROVIDER_CITY = 'NASHVILLE'
+GROUP BY
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY
+ORDER BY
+	TOTAL_CLAIMS DESC
+	LIMIT 5;
+	
+-- Now, report the same for Memphis.
+
+SELECT
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY,
+	SUM(TOTAL_CLAIM_COUNT) AS TOTAL_CLAIMS
+FROM
+	PRESCRIBER PR
+	INNER JOIN PRESCRIPTION P USING (NPI)
+WHERE
+	PR.NPPES_PROVIDER_CITY = 'MEMPHIS'
+GROUP BY
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY
+ORDER BY
+	TOTAL_CLAIMS DESC
+	LIMIT 5;
+
+
+--c. Combine your results from a and b, along with the results for Knoxville and Chattanooga.
+select * from (
+select * from
+(
+SELECT
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY,
+	SUM(TOTAL_CLAIM_COUNT) AS TOTAL_CLAIMS
+FROM
+	PRESCRIBER PR
+	INNER JOIN PRESCRIPTION P USING (NPI)
+WHERE
+	PR.NPPES_PROVIDER_CITY = 'NASHVILLE'
+GROUP BY
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY
+ORDER BY
+	TOTAL_CLAIMS DESC
+	LIMIT 5
+)
+union
+select * from
+(
+SELECT
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY,
+	SUM(TOTAL_CLAIM_COUNT) AS TOTAL_CLAIMS
+FROM
+	PRESCRIBER PR
+	INNER JOIN PRESCRIPTION P USING (NPI)
+WHERE
+	PR.NPPES_PROVIDER_CITY = 'MEMPHIS'
+GROUP BY
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY
+ORDER BY
+	TOTAL_CLAIMS DESC
+	LIMIT 5
+)
+union
+select * from
+(
+SELECT
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY,
+	SUM(TOTAL_CLAIM_COUNT) AS TOTAL_CLAIMS
+FROM
+	PRESCRIBER PR
+	INNER JOIN PRESCRIPTION P USING (NPI)
+WHERE
+	PR.NPPES_PROVIDER_CITY = 'KNOXVILLE'
+GROUP BY
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY
+ORDER BY
+	TOTAL_CLAIMS DESC
+	LIMIT 5
+)
+union
+select * from
+(
+SELECT
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY,
+	SUM(TOTAL_CLAIM_COUNT) AS TOTAL_CLAIMS
+FROM
+	PRESCRIBER PR
+	INNER JOIN PRESCRIPTION P USING (NPI)
+WHERE
+	PR.NPPES_PROVIDER_CITY = 'CHATTANOOGA'
+GROUP BY
+	P.NPI,
+	PR.NPPES_PROVIDER_CITY
+ORDER BY
+	TOTAL_CLAIMS DESC
+	LIMIT 5
+)) order by 2,3 DESC;
+
+--4.Find all counties which had an above-average number of overdose deaths. Report the county name and number of overdose deaths.
+
+SELECT
+	FP.COUNTY AS COUNTY,
+	ROUND(AVG(OD.OVERDOSE_DEATHS), 2) AS AVG_DEATHS
+FROM
+	OVERDOSE_DEATHS OD
+	INNER JOIN FIPS_COUNTY FP ON TO_CHAR(OD.FIPSCOUNTY, 'FM99999') = FP.FIPSCOUNTY
+GROUP BY
+	FP.COUNTY
+ORDER BY
+	AVG_DEATHS DESC;
+
+-- 5a. Write a query that finds the total population of Tennessee.
+
+SELECT
+	SUM(POP.POPULATION) AS TOTAL_POPULATION
+FROM
+	POPULATION POP
+	INNER JOIN FIPS_COUNTY FS USING (FIPSCOUNTY)
+WHERE
+	FS.STATE = 'TN';
+
+
+select * from population;
+
+select * from overdose_deaths;
+select * from zip_fips where zip = '37243';
+
+select * from fips_county;
+
+select * from cbsa where upper(cbsaname) like '%NASHVILLE%';
+
+select * from prescriber
