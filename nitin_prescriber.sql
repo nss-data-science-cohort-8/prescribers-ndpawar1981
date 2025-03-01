@@ -599,13 +599,45 @@ WHERE
 	FS.STATE = 'TN';
 
 
-select * from population;
+SELECT
+	SUM(POP.POPULATION) AS TOTAL_POPULATION
+FROM
+	POPULATION POP
+	INNER JOIN FIPS_COUNTY FS USING (FIPSCOUNTY)
+WHERE
+	FS.STATE = 'TN';
+	
+--b. Build off of the query that you wrote in part a to write a query that returns for each county that county's name, 
+-- its population, and the percentage of the total population of Tennessee that is contained in that county.
 
-select * from overdose_deaths;
-select * from zip_fips where zip = '37243';
+SELECT
+	COUNTY,
+	TOTAL_POPULATION,
+	ROUND(TOTAL_POPULATION / STATE_POPULATION * 100, 2) AS PER_TN_POP
+FROM
+	(
+		SELECT
+			STATE,
+			COUNTY,
+			TOTAL_POPULATION,
+			SUM(TOTAL_POPULATION) OVER (
+				PARTITION BY
+					STATE
+			) AS STATE_POPULATION
+		FROM
+			(
+				SELECT
+					FS.STATE AS STATE,
+					COUNTY,
+					SUM(POP.POPULATION) AS TOTAL_POPULATION
+				FROM
+					POPULATION POP
+					INNER JOIN FIPS_COUNTY FS USING (FIPSCOUNTY)
+				WHERE
+					FS.STATE = 'TN'
+				GROUP BY
+					FS.STATE,
+					COUNTY
+			)
+	);
 
-select * from fips_county;
-
-select * from cbsa where upper(cbsaname) like '%NASHVILLE%';
-
-select * from prescriber
